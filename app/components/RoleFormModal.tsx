@@ -4,7 +4,7 @@ interface UserRoles {
   student_id?: string;
   officer_id?: string;
   organizer_id?: string;
-  university_admin_id?: string;
+  admin_id?: string;
 }
 
 interface RoleFormModalProps {
@@ -107,7 +107,7 @@ export default function RoleFormModal({ isOpen, selectedRole, session, userRoles
     const data: Record<string, string> = {};
     ROLE_FIELDS[selectedRole]?.forEach((field) => {
       const value = formData.get(field.name);
-      if (value) data[field.name] = value.toString();
+      data[field.name] = value ? value.toString() : '';
     });
     onSubmit(data);
   };

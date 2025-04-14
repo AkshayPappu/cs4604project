@@ -7,6 +7,7 @@ import RoleBox from "../components/RoleBox";
 import { useRouter } from "next/navigation";
 import StudentDetails from "../components/StudentDetails";
 import ClubOfficerDetails from "../components/ClubOfficerDetails";
+import UniversityAdminDetails from "../components/UniversityAdminDetails";
 import { RoleDetails, UserRoles } from "../types";
 
 export default function DashboardPage() {
@@ -35,6 +36,45 @@ export default function DashboardPage() {
       const data = await response.json();
       setUserRoles(data);
       setError(null); // Clear any previous errors
+
+      // Fetch details for all roles at once
+      const roleDetailsPromises = Object.entries(data).map(async ([key, value]) => {
+        if (!value) return null;
+        
+        const roleType = key.replace('_id', '');
+        const roleName = (roleType === 'officer' ? 'club_officer' :
+                        roleType === 'admin' ? 'university_admin' :
+                        roleType === 'organizer' ? 'event_organizer' :
+                        roleType) as keyof RoleDetails;
+
+        try {
+          const response = await fetch('/api/roles/details', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ role: roleName, roleId: value })
+          });
+
+          if (!response.ok) {
+            throw new Error(`Failed to fetch ${roleName} details`);
+          }
+
+          const details = await response.json();
+          return { roleName, details: details.details };
+        } catch (error) {
+          console.error(`Error fetching ${roleName} details:`, error);
+          return null;
+        }
+      });
+
+      const roleDetailsResults = await Promise.all(roleDetailsPromises);
+      const newRoleDetails = roleDetailsResults.reduce((acc, result) => {
+        if (result) {
+          acc[result.roleName] = result.details;
+        }
+        return acc;
+      }, {} as RoleDetails);
+
+      setRoleDetails(newRoleDetails);
     } catch (error) {
       console.error('Error fetching user roles:', error);
       setError('Failed to load user roles');
@@ -43,47 +83,13 @@ export default function DashboardPage() {
     }
   };
 
-  // Effect to fetch role details when a role is selected
-  useEffect(() => {
-    if (!selectedRoleName || !userRoles[`${selectedRoleName === 'club_officer' ? 'officer' : 
-                                      selectedRoleName === 'university_admin' ? 'admin' : 
-                                      selectedRoleName === 'event_organizer' ? 'organizer' : 
-                                      selectedRoleName}_id` as keyof typeof userRoles]) return;
-
-    // Mock data for role details
-    const mockDetails = {
-      student: {
-        major: "Computer Science",
-        classification: "Senior"
-      },
-      club_officer: {
-        position_title: "President",
-        officer_start_date: "2023-09-01",
-        officer_end_date: "2024-05-31"
-      },
-      event_organizer: {
-        organizer_name: "John Doe",
-        contact_email: "john.doe@example.com",
-        contact_phone: "(555) 123-4567"
-      },
-      university_admin: {
-        admin_name: "Jane Smith",
-        admin_email: "jane.smith@university.edu",
-        admin_phone: "(555) 987-6543"
-      }
-    };
-
-    setRoleDetails(prev => ({
-      ...prev,
-      [selectedRoleName]: mockDetails[selectedRoleName as keyof typeof mockDetails]
-    }));
-  }, [selectedRoleName, userRoles]);
-
   // Fetch roles when session is ready
   useEffect(() => {
     if (status === 'authenticated') {
       fetchUserRoles();
-      setSelectedRoleName('student'); // Set student as default selected role
+      // Get the stored role type from localStorage, default to 'student' if not found
+      const storedRole = localStorage.getItem('selectedRole') as 'student' | 'club_officer' | 'event_organizer' | 'university_admin' | null;
+      setSelectedRoleName(storedRole || 'student');
     }
   }, [status]);
 
@@ -100,16 +106,26 @@ export default function DashboardPage() {
 
   const handleModalSubmit = async (formData: Record<string, string>) => {
     try {
+      console.log('Dashboard - Form Data being sent:', formData);
+      console.log('Dashboard - Selected Role:', selectedRole);
+      
       const response = await fetch('/api/roles/add', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role: selectedRole, formData })
+        body: JSON.stringify({ 
+          role: selectedRole,
+          ...formData  // Spread the formData directly instead of nesting it
+        })
       });
 
       if (!response.ok) {
         const error = await response.text();
+        console.error('Dashboard - API Error:', error);
         throw new Error(error);
       }
+
+      const responseData = await response.json();
+      console.log('Dashboard - API Response:', responseData);
 
       setSuccess(`Successfully added ${selectedRole?.replace('_', ' ')} role`);
       setShowModal(false);
@@ -117,6 +133,7 @@ export default function DashboardPage() {
       // Immediately refresh the roles
       await fetchUserRoles();
     } catch (error) {
+      console.error('Dashboard - Error:', error);
       if (error instanceof Error) {
         setError(error.message);
       } else {
@@ -177,28 +194,8 @@ export default function DashboardPage() {
           </div>
         );
       }
-      case 'university_admin': {
-        const adminDetails = details as RoleDetails['university_admin'];
-        return (
-          <div className="mt-6 bg-white shadow rounded-lg p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">University Admin Details</h3>
-            <dl className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
-              <div>
-                <dt className="text-sm font-medium text-gray-500">Admin Name</dt>
-                <dd className="mt-1 text-sm text-gray-900">{adminDetails?.admin_name || 'Not specified'}</dd>
-              </div>
-              <div>
-                <dt className="text-sm font-medium text-gray-500">Admin Email</dt>
-                <dd className="mt-1 text-sm text-gray-900">{adminDetails?.admin_email || 'Not specified'}</dd>
-              </div>
-              <div>
-                <dt className="text-sm font-medium text-gray-500">Admin Phone</dt>
-                <dd className="mt-1 text-sm text-gray-900">{adminDetails?.admin_phone || 'Not specified'}</dd>
-              </div>
-            </dl>
-          </div>
-        );
-      }
+      case 'university_admin':
+        return <UniversityAdminDetails details={details as RoleDetails['university_admin']} />;
       default:
         return null;
     }

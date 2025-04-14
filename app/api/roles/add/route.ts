@@ -20,6 +20,8 @@ export async function POST(request: Request) {
     const { role, ...formData } = await request.json();
     const roleId = uuidv4();
 
+    console.log('Add Role - Raw Request Data:', { role, formData });
+
     // Get user details from users table
     const { data: userData, error: userDataError } = await supabase
       .from("users")
@@ -28,11 +30,17 @@ export async function POST(request: Request) {
       .single();
 
     if (userDataError || !userData) {
+      console.error('Add Role - User Data Error:', userDataError);
       return NextResponse.json(
-        { message: "Error fetching user data" },
+        { 
+          message: "Error fetching user data",
+          debug: { userDataError, userData }
+        },
         { status: 400 }
       );
     }
+
+    console.log('Add Role - User Data:', userData);
 
     // If adding a role that requires student role, check if user is already a student
     if (role === "club_officer") {
@@ -83,10 +91,15 @@ export async function POST(request: Request) {
         tableName = "university_admins";
         roleData = {
           admin_id: roleId,
-          admin_name: formData.admin_name || `${userData.first_name} ${userData.last_name}`,
-          admin_email: formData.admin_email || userData.email,
-          admin_phone: formData.admin_phone || null
+          admin_name: formData.admin_name === '' ? `${userData.first_name} ${userData.last_name}` : formData.admin_name,
+          admin_email: formData.admin_email === '' ? userData.email : formData.admin_email,
+          admin_phone: formData.admin_phone === '' ? null : formData.admin_phone
         };
+        console.log('Add Role - University Admin Data:', {
+          formData,
+          roleData,
+          userData
+        });
         break;
       default:
         return NextResponse.json(
@@ -95,15 +108,24 @@ export async function POST(request: Request) {
         );
     }
 
+    console.log('Add Role - Final Role Data:', roleData);
+
     // Insert role record
     const { error: roleError } = await supabase
       .from(tableName)
       .insert(roleData);
 
     if (roleError) {
-      console.error("Role creation error:", roleError);
+      console.error("Add Role - Role creation error:", roleError);
       return NextResponse.json(
-        { message: `Error creating role: ${roleError.message}` },
+        { 
+          message: `Error creating role: ${roleError.message}`,
+          debug: {
+            formData,
+            roleData,
+            error: roleError
+          }
+        },
         { status: 400 }
       );
     }
@@ -113,23 +135,40 @@ export async function POST(request: Request) {
       [`${role === 'club_officer' ? 'officer' : role === 'university_admin' ? 'admin' : role === 'event_organizer' ? 'organizer' : role}_id`]: roleId
     };
 
+    console.log('Add Role - User Update Data:', updateData);
+
     const { error: updateError } = await supabase
       .from("users")
       .update(updateData)
       .eq("email", session.user.email);
 
     if (updateError) {
-      console.error("User update error:", updateError);
+      console.error("Add Role - User update error:", updateError);
       // If user update fails, try to delete the role we just created
       await supabase.from(tableName).delete().eq(`${role}_id`, roleId);
       return NextResponse.json(
-        { message: `Error updating user with role: ${updateError.message}` },
+        { 
+          message: `Error updating user with role: ${updateError.message}`,
+          debug: {
+            formData,
+            roleData,
+            error: updateError
+          }
+        },
         { status: 400 }
       );
     }
 
     return NextResponse.json(
-      { message: "Role added successfully", roleId },
+      { 
+        message: "Role added successfully", 
+        roleId,
+        debug: {
+          formData,
+          roleData,
+          userData
+        }
+      },
       { status: 200 }
     );
   } catch (error) {

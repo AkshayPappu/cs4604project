@@ -27,7 +27,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Delete the role entity
     let tableName: string;
     let idField: string;
 
@@ -52,34 +51,20 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
     }
 
-    // Delete the role entity
-    const { error: deleteError } = await supabase
+    // Fetch the role details
+    const { data: roleDetails, error: detailsError } = await supabase
       .from(tableName)
-      .delete()
-      .eq(idField, roleId);
+      .select('*')
+      .eq(idField, roleId)
+      .single();
 
-    if (deleteError) {
-      return NextResponse.json({ error: 'Failed to delete role entity' }, { status: 500 });
+    if (detailsError) {
+      return NextResponse.json({ error: 'Failed to fetch role details' }, { status: 500 });
     }
 
-    // Update the user record to remove the role ID
-    const { error: updateError } = await supabase
-      .from('users')
-      .update({ 
-        [`${role === 'university_admin' ? 'admin' : 
-            role === 'club_officer' ? 'officer' : 
-            role === 'event_organizer' ? 'organizer' : 
-            role}_id`]: null 
-      })
-      .eq('email', session.user.email);
-
-    if (updateError) {
-      return NextResponse.json({ error: 'Failed to update user record' }, { status: 500 });
-    }
-
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ details: roleDetails });
   } catch (error) {
-    console.error('Error removing role:', error);
+    console.error('Error fetching role details:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 } 
