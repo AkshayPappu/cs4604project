@@ -172,28 +172,6 @@ export default function DashboardPage() {
             onShowCreateEventModal={() => setShowModal(true)}
           />
         );
-      case 'event_organizer': {
-        const organizerDetails = details as RoleDetails['event_organizer'];
-        return (
-          <div className="mt-6 bg-white shadow rounded-lg p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Event Organizer Details</h3>
-            <dl className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
-              <div>
-                <dt className="text-sm font-medium text-gray-500">Organizer Name</dt>
-                <dd className="mt-1 text-sm text-gray-900">{organizerDetails?.organizer_name || 'Not specified'}</dd>
-              </div>
-              <div>
-                <dt className="text-sm font-medium text-gray-500">Contact Email</dt>
-                <dd className="mt-1 text-sm text-gray-900">{organizerDetails?.contact_email || 'Not specified'}</dd>
-              </div>
-              <div>
-                <dt className="text-sm font-medium text-gray-500">Contact Phone</dt>
-                <dd className="mt-1 text-sm text-gray-900">{organizerDetails?.contact_phone || 'Not specified'}</dd>
-              </div>
-            </dl>
-          </div>
-        );
-      }
       case 'university_admin':
         return <UniversityAdminDetails details={details as RoleDetails['university_admin']} />;
       default:
@@ -238,7 +216,7 @@ export default function DashboardPage() {
               </div>
             )}
             <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {['student', 'club_officer', 'event_organizer', 'university_admin'].map((roleName) => {
+              {['student', 'club_officer', 'university_admin'].map((roleName) => {
                 const roleId = roleName === 'club_officer' ? 'officer_id' : 
                              roleName === 'university_admin' ? 'admin_id' : 
                              roleName === 'event_organizer' ? 'organizer_id' :

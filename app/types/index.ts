@@ -7,6 +7,7 @@ export interface RoleDetails {
     position_title?: string;
     officer_start_date?: string;
     officer_end_date?: string;
+    club_ids?: string[];
   };
   event_organizer?: {
     organizer_name?: string;

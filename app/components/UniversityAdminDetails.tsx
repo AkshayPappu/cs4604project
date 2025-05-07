@@ -1,5 +1,5 @@
 import { RoleDetails } from "../types";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import EditProfileModal from "./EditProfileModal";
 
 interface UniversityAdminDetailsProps {
@@ -8,6 +8,26 @@ interface UniversityAdminDetailsProps {
 
 export default function UniversityAdminDetails({ details }: UniversityAdminDetailsProps) {
   const [showEditModal, setShowEditModal] = useState(false);
+  const [stats, setStats] = useState({ total_students: 0, total_clubs: 0, total_upcoming_events: 0 });
+  const [loadingStats, setLoadingStats] = useState(false);
+  const [generatingReport, setGeneratingReport] = useState(false);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      setLoadingStats(true);
+      try {
+        const response = await fetch("/api/university/stats");
+        if (!response.ok) throw new Error("Failed to fetch stats");
+        const data = await response.json();
+        setStats(data);
+      } catch (err) {
+        setStats({ total_students: 0, total_clubs: 0, total_upcoming_events: 0 });
+      } finally {
+        setLoadingStats(false);
+      }
+    };
+    fetchStats();
+  }, []);
 
   const handleEditSubmit = async (formData: any) => {
     try {
@@ -24,6 +44,27 @@ export default function UniversityAdminDetails({ details }: UniversityAdminDetai
       setShowEditModal(false);
     } catch (error) {
       console.error('Error updating profile:', error);
+    }
+  };
+
+  const handleGenerateReport = async () => {
+    try {
+      setGeneratingReport(true);
+      const response = await fetch("/api/university/report");
+      if (!response.ok) throw new Error("Failed to generate report");
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "university-report.pdf";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      alert("Failed to generate report. Please try again.");
+    } finally {
+      setGeneratingReport(false);
     }
   };
 
@@ -59,58 +100,36 @@ export default function UniversityAdminDetails({ details }: UniversityAdminDetai
       {/* University Statistics Section */}
       <div className="bg-white shadow rounded-lg p-6">
         <h3 className="text-lg font-medium text-gray-900 mb-4">University Statistics</h3>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <div className="p-4 border rounded-lg">
-            <dt className="text-sm font-medium text-gray-500">Total Students</dt>
-            <dd className="mt-1 text-2xl font-semibold text-gray-900">2,500</dd>
+        {loadingStats ? (
+          <div>Loading statistics...</div>
+        ) : (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="p-4 border rounded-lg">
+              <dt className="text-sm font-medium text-gray-500">Total Students</dt>
+              <dd className="mt-1 text-2xl font-semibold text-gray-900">{stats.total_students}</dd>
+            </div>
+            <div className="p-4 border rounded-lg">
+              <dt className="text-sm font-medium text-gray-500">Active Clubs</dt>
+              <dd className="mt-1 text-2xl font-semibold text-gray-900">{stats.total_clubs}</dd>
+            </div>
+            <div className="p-4 border rounded-lg">
+              <dt className="text-sm font-medium text-gray-500">Upcoming Events</dt>
+              <dd className="mt-1 text-2xl font-semibold text-gray-900">{stats.total_upcoming_events}</dd>
+            </div>
           </div>
-          <div className="p-4 border rounded-lg">
-            <dt className="text-sm font-medium text-gray-500">Active Clubs</dt>
-            <dd className="mt-1 text-2xl font-semibold text-gray-900">45</dd>
-          </div>
-          <div className="p-4 border rounded-lg">
-            <dt className="text-sm font-medium text-gray-500">Upcoming Events</dt>
-            <dd className="mt-1 text-2xl font-semibold text-gray-900">12</dd>
-          </div>
-        </div>
+        )}
       </div>
 
-      {/* Recent Activity Section */}
+      {/* Generate University Report Section */}
       <div className="bg-white shadow rounded-lg p-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Recent Activity</h3>
-        <div className="space-y-4">
-          {[
-            'New club registration: Robotics Club',
-            'Event approval: Career Fair 2024',
-            'Budget allocation: Computer Science Club',
-            'New student registration: John Smith'
-          ].map((activity, index) => (
-            <div key={index} className="flex items-center p-4 border rounded-lg">
-              <span className="text-sm font-medium text-gray-900">{activity}</span>
-              <span className="ml-auto text-sm text-gray-500">2 hours ago</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* System Reports Section */}
-      <div className="bg-white shadow rounded-lg p-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">System Reports</h3>
-        <div className="space-y-4">
-          {[
-            'Monthly User Activity Report',
-            'Club Budget Utilization Report',
-            'Event Attendance Analysis',
-            'System Performance Metrics'
-          ].map((report, index) => (
-            <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
-              <span className="text-sm font-medium text-gray-900">{report}</span>
-              <button className="px-3 py-1 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700">
-                Download
-              </button>
-            </div>
-          ))}
-        </div>
+        <h3 className="text-lg font-medium text-gray-900 mb-4">Generate University Report</h3>
+        <button
+          onClick={handleGenerateReport}
+          className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700"
+          disabled={generatingReport}
+        >
+          {generatingReport ? "Generating..." : "Generate Report"}
+        </button>
       </div>
 
       <EditProfileModal

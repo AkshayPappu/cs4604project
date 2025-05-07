@@ -3,21 +3,54 @@ import { useState } from 'react';
 interface CreateClubModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (formData: { club_name: string; club_description: string; club_budget: string }) => void;
+  onSubmit: (formData: ClubFormData) => void;
 }
 
-export default function CreateClubModal({ isOpen, onClose, onSubmit }: CreateClubModalProps) {
-  const [formData, setFormData] = useState({
+interface ClubFormData {
+  club_name: string;
+  club_description: string;
+  club_budget: string;
+}
+
+export default function CreateClubModal({ isOpen, onClose }: CreateClubModalProps) {
+  const [formData, setFormData] = useState<ClubFormData>({
     club_name: '',
     club_description: '',
     club_budget: ''
   });
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+    setIsLoading(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      const response = await fetch('/api/clubs/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setError(data.message || 'Failed to create club');
+        return;
+      }
+      setSuccess('Club created successfully!');
+      setFormData({ club_name: '', club_description: '', club_budget: '' });
+      setTimeout(() => {
+        setSuccess(null);
+        onClose();
+      }, 1000);
+    } catch (err) {
+      setError('Error creating club');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -65,19 +98,23 @@ export default function CreateClubModal({ isOpen, onClose, onSubmit }: CreateClu
               required
             />
           </div>
+          {error && <div className="text-red-500 text-sm text-center">{error}</div>}
+          {success && <div className="text-green-500 text-sm text-center">{success}</div>}
           <div className="flex justify-end space-x-3">
             <button
               type="button"
               onClick={onClose}
               className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+              disabled={isLoading}
             >
               Cancel
             </button>
             <button
               type="submit"
               className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700"
+              disabled={isLoading}
             >
-              Create Club
+              {isLoading ? 'Creating...' : 'Create Club'}
             </button>
           </div>
         </form>
