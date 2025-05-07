@@ -98,30 +98,7 @@ INSERT INTO club_officers(student_id, club_id, officer_start_date, officer_end_d
   (19,19,'2024-08-22',NULL,'Vice President'),
   (20,20,'2024-09-28',NULL,'President');
 
--- 6. EVENT_ORGANIZERS
-INSERT INTO event_organizers(student_id, event_id, organizer_role) VALUES
-  (1,1,'Lead'),
-  (2,2,'Coordinator'),
-  (3,3,'Lead'),
-  (4,4,'Coordinator'),
-  (5,5,'Lead'),
-  (6,6,'Coordinator'),
-  (7,7,'Lead'),
-  (8,8,'Coordinator'),
-  (9,9,'Lead'),
-  (10,10,'Coordinator'),
-  (11,11,'Lead'),
-  (12,12,'Coordinator'),
-  (13,13,'Lead'),
-  (14,14,'Coordinator'),
-  (15,15,'Lead'),
-  (16,16,'Coordinator'),
-  (17,17,'Lead'),
-  (18,18,'Coordinator'),
-  (19,19,'Lead'),
-  (20,20,'Coordinator');
-
--- 7. MEMBERSHIP
+-- 6. MEMBERSHIP
 INSERT INTO membership(student_id, club_id, join_date) VALUES
   (1,1,'2023-09-01'),
   (2,2,'2023-09-05'),
@@ -144,7 +121,7 @@ INSERT INTO membership(student_id, club_id, join_date) VALUES
   (19,19,'2023-11-30'),
   (20,20,'2023-12-05');
 
--- 8. MEMBERSHIP_TRENDS
+-- 7. MEMBERSHIP_TRENDS
 INSERT INTO membership_trends(student_id, club_id, membership_end_date) VALUES
   (1,1,NULL),
   (2,2,NULL),
@@ -167,7 +144,7 @@ INSERT INTO membership_trends(student_id, club_id, membership_end_date) VALUES
   (19,19,NULL),
   (20,20,NULL);
 
--- 9. ATTENDANCE
+-- 8. ATTENDANCE
 INSERT INTO attendance(event_id, student_id, check_in_time, check_out_time) VALUES
   (1,1,'2025-04-10 09:00','2025-04-10 12:00'),
   (1,2,'2025-04-10 09:15','2025-04-10 11:45'),
@@ -190,7 +167,7 @@ INSERT INTO attendance(event_id, student_id, check_in_time, check_out_time) VALU
   (10,10,'2025-04-12 12:00','2025-04-12 18:00'),
   (10,11,'2025-04-12 12:15','2025-04-12 17:45');
 
--- 10. NOTIFICATIONS
+-- 9. NOTIFICATIONS
 INSERT INTO notifications(recipient_id, notification_message, notification_sent_at) VALUES
   (1,'Your Chess Tournament starts in one hour','2025-04-10 08:00'),
   (2,'Robotics Showcase tickets are available','2025-03-14 09:00'),
